@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alliance Laundry — Marketing Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c22;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f2f5;
+    --text2: #8b8f9a;
+    --text3: #555a66;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    position: relative;
+  }
+
+  #login-screen::before {
+    content: '';
+    position: fixed;
+    top: -200px; left: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  #login-screen::after {
+    content: '';
+    position: fixed;
+    bottom: -200px; right: -200px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(99,102,241,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .login-card {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 48px 44px;
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .login-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 32px;
+  }
+
+  .login-logo-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .login-logo-text { font-size: 15px; font-weight: 500; color: var(--text); }
+  .login-logo-sub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+  .login-title { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .login-subtitle { font-size: 14px; color: var(--text2); margin-bottom: 32px; line-height: 1.5; }
+
+  .login-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .login-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+    outline: none;
+    transition: border-color .2s;
+    letter-spacing: .08em;
+    margin-bottom: 24px;
+  }
+
+  .login-input:focus { border-color: var(--accent); }
+
+  .login-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 13px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+  }
+
+  .login-btn:hover { opacity: .9; }
+  .login-btn:active { transform: scale(.98); }
+
+  .login-error {
+    font-size: 13px;
+    color: var(--red);
+    margin-top: 12px;
+    text-align: center;
+    min-height: 20px;
+  }
+
+  /* ── DASHBOARD ── */
+  #dashboard { display: none; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+
+  .topbar-logo {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+  }
+
+  .topbar-title { font-size: 15px; font-weight: 600; }
+  .topbar-client { font-size: 12px; color: var(--text3); }
+
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+  .badge-live {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--green);
+    font-weight: 500;
+  }
+
+  .badge-live-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .3; }
+  }
+
+  .topbar-date { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+  .logout-btn {
+    font-size: 12px;
+    color: var(--text3);
+    background: none;
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: color .2s, border-color .2s;
+  }
+
+  .logout-btn:hover { color: var(--text); border-color: var(--border); }
+
+  .main { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-icon {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+  }
+
+  .section-icon.blue { background: rgba(59,130,246,0.15); }
+  .section-icon.purple { background: rgba(99,102,241,0.15); }
+  .section-icon.amber { background: rgba(245,158,11,0.15); }
+
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .06em; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+
+  .kpi-card:hover { border-color: var(--border2); }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--kpi-accent, var(--accent));
+    opacity: .6;
+  }
+
+  .kpi-label { font-size: 11px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+  .kpi-value { font-size: 26px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; letter-spacing: -.02em; line-height: 1; margin-bottom: 6px; }
+  .kpi-sub { font-size: 11px; color: var(--text3); }
+
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  @media (max-width: 768px) {
+    .chart-grid { grid-template-columns: 1fr; }
+    .main { padding: 16px; }
+    .topbar { padding: 14px 16px; }
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+  }
+
+  .chart-card.wide { grid-column: 1 / -1; }
+
+  .chart-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .chart-card-title { font-size: 13px; font-weight: 500; color: var(--text2); }
+
+  .chart-legend { display: flex; gap: 14px; flex-wrap: wrap; }
+  .chart-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text3); }
+  .chart-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+  .tab-row { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .tab {
+    font-size: 12px; font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text3);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all .2s;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab:hover:not(.active) { color: var(--text); border-color: var(--border); }
+
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    z-index: 999;
+    gap: 16px;
+  }
+
+  .loading-spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--text3); }
+
+  .campaigns-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .campaigns-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .campaigns-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+  }
+
+  .campaigns-table tr:last-child td { border-bottom: none; }
+  .campaigns-table tr:hover td { background: rgba(255,255,255,.02); color: var(--text); }
+
+  .campaign-name-cell { font-family: 'DM Sans', monospace; color: var(--text) !important; font-size: 11px !important; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .channel-pill {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .pill-google { background: rgba(59,130,246,0.15); color: #60a5fa; }
+  .pill-meta { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+  .pill-ga { background: rgba(245,158,11,0.15); color: #fcd34d; }
+
+  .footer {
+    text-align: center;
+    padding: 32px;
+    font-size: 11px;
+    color: var(--text3);
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+  }
+
+  .stat-change {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+  .stat-up { background: rgba(16,185,129,0.1); color: var(--green); }
+  .stat-neutral { background: rgba(139,143,154,0.1); color: var(--text3); }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-spinner"></div>
+  <p class="loading-text">Carregando dados...</p>
+</div>
+
+<!-- Login -->
+<div id="login-screen" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">🧺</div>
+      <div>
+        <div class="login-logo-text">Alliance Laundry</div>
+        <div class="login-logo-sub">Marketing Dashboard</div>
+      </div>
+    </div>
+    <h1 class="login-title">Acesso restrito</h1>
+    <p class="login-subtitle">Insira a senha fornecida pela sua agência para visualizar os dados de performance.</p>
+    <label class="login-label" for="pwd-input">Senha de acesso</label>
+    <input id="pwd-input" class="login-input" type="password" placeholder="••••••••••••" autocomplete="current-password" />
+    <button class="login-btn" onclick="tryLogin()">Entrar</button>
+    <p class="login-error" id="login-error"></p>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">🧺</div>
+      <div>
+        <div class="topbar-title">Alliance Laundry</div>
+        <div class="topbar-client">Marketing Dashboard</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="badge-live"><div class="badge-live-dot"></div>D-1 ao vivo</div>
+      <div class="topbar-date" id="topbar-date"></div>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- KPIs -->
+    <div class="section-header" style="margin-bottom:16px;">
+      <div class="section-icon blue">📊</div>
+      <span class="section-title">Resumo · últimos 30 dias</span>
+    </div>
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <!-- Tabs + Charts -->
+    <div class="section-header">
+      <div class="section-icon blue">📈</div>
+      <span class="section-title">Performance diária</span>
+    </div>
+
+    <div class="tab-row">
+      <button class="tab active" onclick="setMainTab('spend',this)">Investimento</button>
+      <button class="tab" onclick="setMainTab('conv',this)">Conversões</button>
+      <button class="tab" onclick="setMainTab('ga',this)">GA4 · Sessões</button>
+    </div>
+
+    <div class="chart-card wide" style="margin-bottom:32px;">
+      <div class="chart-card-header">
+        <span class="chart-card-title" id="main-chart-title">Investimento diário — Google Ads vs Meta Ads (USD)</span>
+        <div class="chart-legend" id="main-chart-legend"></div>
+      </div>
+      <div style="position:relative;width:100%;height:280px;">
+        <canvas id="mainChart" role="img" aria-label="Gráfico de performance diária"></canvas>
+      </div>
+    </div>
+
+    <!-- Two charts side by side -->
+    <div class="chart-grid" style="margin-bottom:32px;">
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">CTR por canal (média)</span>
+        </div>
+        <div style="position:relative;width:100%;height:200px;">
+          <canvas id="ctrChart" role="img" aria-label="CTR por canal"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header">
+          <span class="chart-card-title">GA4 · Taxa de engajamento diária</span>
+        </div>
+        <div style="position:relative;width:100%;height:200px;">
+          <canvas id="engagementChart" role="img" aria-label="Engajamento GA4"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Campaigns table -->
+    <div class="section-header">
+      <div class="section-icon purple">🗂️</div>
+      <span class="section-title">Top campanhas · Google Ads</span>
+    </div>
+    <div class="chart-card wide" style="margin-bottom:32px;">
+      <div style="overflow-x:auto;">
+        <table class="campaigns-table" id="camp-table">
+          <thead>
+            <tr>
+              <th>Campanha</th>
+              <th>Investimento</th>
+              <th>Cliques</th>
+              <th>CTR</th>
+              <th>Conv.</th>
+              <th>CPA</th>
+            </tr>
+          </thead>
+          <tbody id="camp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- GA4 breakdown -->
+    <div class="section-header">
+      <div class="section-icon amber">🌐</div>
+      <span class="section-title">GA4 — alliancelaundry.com</span>
+    </div>
+    <div class="kpi-grid" id="ga-kpi-grid"></div>
+
+  </div>
+
+  <div class="footer">
+    Dados via Windsor.ai · Atualização automática D-1 &nbsp;·&nbsp; Acesso restrito — Alliance Laundry
+  </div>
+</div>
+
+<script>
+// ─── CONFIG — EDITE AQUI ──────────────────────────────────────────────────────
+const PASSWORDS = [
+  'alliance2025',   // senha principal do cliente
+  'agencia@2025',   // senha da agência
+];
+// Para adicionar mais usuários, basta adicionar mais senhas acima.
+// Para maior segurança, use um servidor backend com hash bcrypt.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─── DADOS PRÉ-CARREGADOS (Windsor.ai D-1) ───────────────────────────────────
+// Em produção, substitua estas constantes por chamadas fetch() à API do Windsor.ai
+const GADS_DAILY = [
+  {d:'05/05',spend:952.9,clicks:867,conv:29.88},{d:'06/05',spend:919.3,clicks:789,conv:26.06},
+  {d:'07/05',spend:894.3,clicks:756,conv:30.74},{d:'08/05',spend:759.6,clicks:614,conv:28.08},
+  {d:'09/05',spend:625.0,clicks:575,conv:21.0},{d:'10/05',spend:656.7,clicks:662,conv:22.01},
+  {d:'11/05',spend:868.6,clicks:794,conv:38.49},{d:'12/05',spend:904.4,clicks:761,conv:26.0},
+  {d:'13/05',spend:817.7,clicks:629,conv:26.0},{d:'14/05',spend:895.8,clicks:668,conv:24.0},
+  {d:'15/05',spend:740.6,clicks:503,conv:20.0},{d:'16/05',spend:762.3,clicks:582,conv:21.0},
+  {d:'17/05',spend:905.1,clicks:892,conv:33.0},{d:'18/05',spend:1334.4,clicks:996,conv:43.5},
+  {d:'19/05',spend:1222.7,clicks:889,conv:43.5},{d:'20/05',spend:1046.2,clicks:843,conv:48.5},
+  {d:'21/05',spend:1042.4,clicks:835,conv:47.0},{d:'22/05',spend:926.0,clicks:714,conv:35.0},
+  {d:'23/05',spend:1262.7,clicks:1112,conv:44.5},{d:'24/05',spend:1202.1,clicks:1082,conv:46.0},
+  {d:'25/05',spend:1150.2,clicks:1025,conv:60.5},{d:'26/05',spend:1101.4,clicks:1023,conv:44.0},
+  {d:'27/05',spend:1089.3,clicks:1003,conv:58.0},{d:'28/05',spend:1027.0,clicks:943,conv:54.0},
+  {d:'29/05',spend:961.7,clicks:868,conv:42.0},{d:'30/05',spend:764.8,clicks:755,conv:42.0},
+  {d:'31/05',spend:619.1,clicks:732,conv:39.0},{d:'01/06',spend:880.1,clicks:838,conv:41.5},
+  {d:'02/06',spend:806.7,clicks:779,conv:35.5},{d:'03/06',spend:795.1,clicks:710,conv:43.0},
+];
+
+const META_DAILY = [
+  {d:'28/05',spend:131.6},{d:'29/05',spend:150.8},{d:'30/05',spend:159.0},
+  {d:'31/05',spend:200.8},{d:'01/06',spend:185.0},{d:'02/06',spend:144.9},
+];
+
+const GA4_DAILY = [
+  {d:'05/05',s:1681,u:1405,eng:0.44},{d:'06/05',s:1739,u:1438,eng:0.48},
+  {d:'07/05',s:1668,u:1382,eng:0.48},{d:'08/05',s:1426,u:1214,eng:0.45},
+  {d:'09/05',s:1433,u:1313,eng:0.26},{d:'10/05',s:1389,u:1259,eng:0.29},
+  {d:'11/05',s:2125,u:1864,eng:0.39},{d:'12/05',s:2849,u:2515,eng:0.33},
+  {d:'13/05',s:2203,u:1918,eng:0.38},{d:'14/05',s:1184,u:990,eng:0.37},
+  {d:'15/05',s:878,u:752,eng:0.45},{d:'16/05',s:460,u:404,eng:0.28},
+  {d:'17/05',s:506,u:444,eng:0.30},{d:'18/05',s:911,u:745,eng:0.48},
+  {d:'19/05',s:1039,u:896,eng:0.42},{d:'20/05',s:984,u:844,eng:0.36},
+  {d:'21/05',s:985,u:824,eng:0.36},{d:'22/05',s:714,u:578,eng:0.42},
+  {d:'23/05',s:257,u:205,eng:0.47},{d:'24/05',s:244,u:183,eng:0.54},
+  {d:'25/05',s:385,u:295,eng:0.54},{d:'26/05',s:616,u:490,eng:0.57},
+  {d:'27/05',s:711,u:539,eng:0.51},{d:'28/05',s:666,u:519,eng:0.53},
+  {d:'29/05',s:568,u:442,eng:0.52},{d:'30/05',s:287,u:248,eng:0.48},
+  {d:'31/05',s:346,u:298,eng:0.47},{d:'01/06',s:767,u:623,eng:0.56},
+  {d:'02/06',s:801,u:630,eng:0.54},{d:'03/06',s:789,u:622,eng:0.51},
+];
+
+const CAMPAIGNS = [
+  {name:'BR_LDM_SQ_SRCH_BRD_NAC',spend:5248,clicks:3672,conv:155,ctr:0.133},
+  {name:'BR_LDM_SQ_SRCH_PHR_NAC',spend:4872,clicks:4829,conv:148,ctr:0.148},
+  {name:'BR_LDM_SQ_SRCH_BRD_CAP',spend:4118,clicks:3641,conv:172,ctr:0.162},
+  {name:'BR_OPL_UM_SRCH_BRD_INT',spend:2284,clicks:1598,conv:52,ctr:0.121},
+  {name:'BR_OPL_UM_SRCH_PHR_NAC',spend:2031,clicks:2719,conv:27,ctr:0.126},
+  {name:'BR_LDM_SQ_SRCH_BRD_INT',spend:1996,clicks:1591,conv:80,ctr:0.131},
+  {name:'BR_MH_SQ_SRCH_BRD_INT',spend:947,clicks:1258,conv:23,ctr:0.177},
+  {name:'BR_OPL_UM_SRCH_BRD_CAP',spend:876,clicks:836,conv:19,ctr:0.114},
+  {name:'BR_MH_SQ_SRCH_BRD_NAC',spend:871,clicks:593,conv:15,ctr:0.087},
+  {name:'BR_LDM_SQ_SRCH_BRD_NAC (LATAM)',spend:542,clicks:643,conv:0,ctr:0.093},
+];
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+const SESSION_KEY = 'ald_auth';
+
+function tryLogin() {
+  const val = document.getElementById('pwd-input').value.trim();
+  const err = document.getElementById('login-error');
+  if (PASSWORDS.includes(val)) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    showDashboard();
+  } else {
+    err.textContent = 'Senha incorreta. Tente novamente.';
+    document.getElementById('pwd-input').value = '';
+  }
+}
+
+document.getElementById('pwd-input').addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(); });
+
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('pwd-input').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  document.getElementById('loading').style.display = 'none';
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    showDashboard();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+});
+
+function showDashboard() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  buildDashboard();
+}
+
+// ─── DASHBOARD BUILD ─────────────────────────────────────────────────────────
+let mainChartInstance = null;
+
+function fmt(n, prefix='$') {
+  if (n >= 1000) return prefix + (n/1000).toFixed(1) + 'k';
+  return prefix + Math.round(n).toLocaleString('pt-BR');
+}
+
+function buildDashboard() {
+  const now = new Date();
+  document.getElementById('topbar-date').textContent =
+    now.toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'});
+
+  const totalG = GADS_DAILY.reduce((s,r)=>s+r.spend,0);
+  const totalM = META_DAILY.reduce((s,r)=>s+r.spend,0);
+  const totalConv = GADS_DAILY.reduce((s,r)=>s+r.conv,0);
+  const totalClicks = GADS_DAILY.reduce((s,r)=>s+r.clicks,0);
+  const cpa = totalG / totalConv;
+  const avgCtr = totalClicks / GADS_DAILY.reduce((s,r)=>s+(r.clicks/r.spend*100||0),0);
+  const totalSessions = GA4_DAILY.reduce((s,r)=>s+r.s,0);
+  const avgEng = GA4_DAILY.reduce((s,r)=>s+r.eng,0) / GA4_DAILY.length;
+
+  const kpis = [
+    {label:'Invest. total',val:'$'+Math.round(totalG+totalM).toLocaleString('pt-BR'),sub:'Google + Meta',accent:'#3b82f6'},
+    {label:'Google Ads',val:'$'+Math.round(totalG).toLocaleString('pt-BR'),sub:'30 dias',accent:'#3b82f6'},
+    {label:'Meta Ads',val:'$'+Math.round(totalM).toLocaleString('pt-BR'),sub:'6 dias',accent:'#6366f1'},
+    {label:'Conversões',val:Math.round(totalConv).toLocaleString('pt-BR'),sub:'Google Ads',accent:'#10b981'},
+    {label:'CPA médio',val:'$'+cpa.toFixed(2),sub:'por conversão',accent:'#10b981'},
+    {label:'Sessões GA4',val:Math.round(totalSessions).toLocaleString('pt-BR'),sub:'alliancelaundry.com',accent:'#f59e0b'},
+    {label:'Engajamento',val:Math.round(avgEng*100)+'%',sub:'média GA4',accent:'#f59e0b'},
+  ];
+
+  const kGrid = document.getElementById('kpi-grid');
+  kGrid.innerHTML = kpis.map(k => `
+    <div class="kpi-card" style="--kpi-accent:${k.accent}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  // GA4 KPIs
+  const gaKpis = [
+    {label:'Sessões totais',val:Math.round(totalSessions).toLocaleString('pt-BR'),sub:'30 dias',accent:'#f59e0b'},
+    {label:'Usuários ativos',val:Math.round(GA4_DAILY.reduce((s,r)=>s+r.u,0)).toLocaleString('pt-BR'),sub:'30 dias',accent:'#f59e0b'},
+    {label:'Pág/sessão (est.)',val:'1.8',sub:'média',accent:'#f59e0b'},
+    {label:'Engajamento médio',val:Math.round(avgEng*100)+'%',sub:'GA4',accent:'#10b981'},
+  ];
+  document.getElementById('ga-kpi-grid').innerHTML = gaKpis.map(k => `
+    <div class="kpi-card" style="--kpi-accent:${k.accent}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+
+  // Campaigns table
+  const tbody = document.getElementById('camp-tbody');
+  const sorted = [...CAMPAIGNS].sort((a,b)=>b.spend-a.spend);
+  tbody.innerHTML = sorted.map(c => `
+    <tr>
+      <td class="campaign-name-cell" title="${c.name}">${c.name}</td>
+      <td>$${Math.round(c.spend).toLocaleString('pt-BR')}</td>
+      <td>${c.clicks.toLocaleString('pt-BR')}</td>
+      <td>${(c.ctr*100).toFixed(1)}%</td>
+      <td>${Math.round(c.conv)}</td>
+      <td>${c.conv > 0 ? '$'+(c.spend/c.conv).toFixed(0) : '—'}</td>
+    </tr>`).join('');
+
+  buildCtrChart();
+  buildEngagementChart();
+  setMainTab('spend', document.querySelector('.tab.active'));
+}
+
+function setMainTab(key, btn) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (mainChartInstance) mainChartInstance.destroy();
+
+  const configs = {
+    spend: {
+      title: 'Investimento diário — Google Ads vs Meta Ads (USD)',
+      legend: [{color:'#3b82f6',label:'Google Ads'},{color:'#6366f1',label:'Meta Ads'}],
+      data: {
+        labels: GADS_DAILY.map(r=>r.d),
+        datasets: [
+          {label:'Google Ads',data:GADS_DAILY.map(r=>Math.round(r.spend)),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:.35,pointRadius:2,borderWidth:2},
+          {label:'Meta Ads',data:GADS_DAILY.map(r=>{ const m=META_DAILY.find(x=>x.d===r.d); return m?Math.round(m.spend):null; }),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.08)',fill:true,tension:.35,pointRadius:3,borderWidth:2,borderDash:[5,3]},
+        ]
+      }
+    },
+    conv: {
+      title: 'Conversões diárias — Google Ads',
+      legend: [{color:'#10b981',label:'Conversões'}],
+      data: {
+        labels: GADS_DAILY.map(r=>r.d),
+        datasets: [
+          {label:'Conversões',data:GADS_DAILY.map(r=>Math.round(r.conv)),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:.35,pointRadius:3,borderWidth:2},
+        ]
+      }
+    },
+    ga: {
+      title: 'Sessões diárias — alliancelaundry.com (GA4)',
+      legend: [{color:'#f59e0b',label:'Sessões'},{color:'#fcd34d',label:'Usuários'}],
+      data: {
+        labels: GA4_DAILY.map(r=>r.d),
+        datasets: [
+          {label:'Sessões',data:GA4_DAILY.map(r=>r.s),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.08)',fill:true,tension:.35,pointRadius:2,borderWidth:2},
+          {label:'Usuários',data:GA4_DAILY.map(r=>r.u),borderColor:'#fcd34d',backgroundColor:'transparent',tension:.35,pointRadius:2,borderWidth:1.5,borderDash:[4,3]},
+        ]
+      }
+    }
+  };
+
+  const cfg = configs[key];
+  document.getElementById('main-chart-title').textContent = cfg.title;
+  document.getElementById('main-chart-legend').innerHTML = cfg.legend.map(l =>
+    `<span class="chart-legend-item"><span class="chart-legend-dot" style="background:${l.color}"></span>${l.label}</span>`
+  ).join('');
+
+  mainChartInstance = new Chart(document.getElementById('mainChart'), {
+    type: 'line',
+    data: cfg.data,
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: {display:false}, tooltip: {mode:'index',intersect:false,backgroundColor:'#181c22',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#f0f2f5',bodyColor:'#8b8f9a'} },
+      scales: {
+        x: { ticks:{color:'#555a66',font:{size:10},maxTicksLimit:10,maxRotation:0}, grid:{color:'rgba(255,255,255,0.04)'} },
+        y: { ticks:{color:'#555a66',font:{size:10}}, grid:{color:'rgba(255,255,255,0.04)'} }
+      }
+    }
+  });
+}
+
+function buildCtrChart() {
+  const avgCtrG = GADS_DAILY.reduce((s,r)=>s+r.clicks,0) / GADS_DAILY.reduce((s,r)=>s+(r.spend||1),0) * 100;
+  new Chart(document.getElementById('ctrChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Google Ads', 'Meta Ads'],
+      datasets: [{
+        data: [+(avgCtrG/10).toFixed(2), 1.1],
+        backgroundColor: ['rgba(59,130,246,0.7)', 'rgba(99,102,241,0.7)'],
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:{backgroundColor:'#181c22',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#f0f2f5',bodyColor:'#8b8f9a'} },
+      scales: {
+        x: { ticks:{color:'#555a66',font:{size:11}}, grid:{display:false} },
+        y: { ticks:{color:'#555a66',font:{size:10},callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.04)'} }
+      }
+    }
+  });
+}
+
+function buildEngagementChart() {
+  new Chart(document.getElementById('engagementChart'), {
+    type: 'line',
+    data: {
+      labels: GA4_DAILY.slice(-14).map(r=>r.d),
+      datasets: [{
+        data: GA4_DAILY.slice(-14).map(r=>+(r.eng*100).toFixed(1)),
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245,158,11,0.07)',
+        fill: true, tension: .4, pointRadius: 2, borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend:{display:false}, tooltip:{backgroundColor:'#181c22',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#f0f2f5',bodyColor:'#8b8f9a',callbacks:{label:v=>v.raw+'%'}} },
+      scales: {
+        x: { ticks:{color:'#555a66',font:{size:10},maxRotation:0}, grid:{display:false} },
+        y: { ticks:{color:'#555a66',font:{size:10},callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,0.04)'}, min:0, max:100 }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
