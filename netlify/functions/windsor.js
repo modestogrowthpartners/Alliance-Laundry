@@ -1,8 +1,3 @@
-// Netlify Function — proxy seguro para Windsor.ai
-// A chave fica em variável de ambiente, nunca exposta no browser
-
-const WINDSOR_API = 'https://connectors.windsor.ai/';
-
 const HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -21,19 +16,23 @@ exports.handler = async (event) => {
 
   const { connector, fields, date_from, date_to, accounts } = JSON.parse(event.body || '{}');
 
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    connector,
-    fields: Array.isArray(fields) ? fields.join(',') : fields,
-    date_from,
-    date_to,
-  });
+  const params = new URLSearchParams();
+  params.append('api_key', apiKey);
+  params.append('connector', connector);
+  params.append('fields', Array.isArray(fields) ? fields.join(',') : fields);
+  params.append('date_from', date_from);
+  params.append('date_to', date_to);
   if (accounts) params.append('accounts', Array.isArray(accounts) ? accounts.join(',') : accounts);
 
+  const url = `https://connectors.windsor.ai/all?${params.toString()}`;
+
   try {
-    const res = await fetch(`${WINDSOR_API}?${params}`);
-    const data = await res.json();
-    return { statusCode: 200, headers: HEADERS, body: JSON.stringify(data) };
+    const res = await fetch(url);
+    const text = await res.text();
+    if (!res.ok) {
+      return { statusCode: res.status, headers: HEADERS, body: JSON.stringify({ error: `Windsor returned ${res.status}`, detail: text.slice(0, 500) }) };
+    }
+    return { statusCode: 200, headers: HEADERS, body: text };
   } catch (err) {
     return { statusCode: 500, headers: HEADERS, body: JSON.stringify({ error: err.message }) };
   }
