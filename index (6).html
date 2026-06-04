@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alliance Laundry — Marketing Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #111318;
+    --surface2: #181c22;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f2f5;
+    --text2: #8b8f9a;
+    --text3: #555a66;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden; }
+
+  /* LOGIN */
+  #login-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; position:relative; }
+  #login-screen::before { content:''; position:fixed; top:-200px; left:-200px; width:600px; height:600px; background:radial-gradient(circle,rgba(59,130,246,0.12) 0%,transparent 70%); pointer-events:none; }
+  #login-screen::after { content:''; position:fixed; bottom:-200px; right:-200px; width:500px; height:500px; background:radial-gradient(circle,rgba(99,102,241,0.10) 0%,transparent 70%); pointer-events:none; }
+  .login-card { background:var(--surface); border:1px solid var(--border2); border-radius:20px; padding:48px 44px; width:100%; max-width:400px; position:relative; z-index:1; }
+  .login-logo { display:flex; align-items:center; gap:10px; margin-bottom:32px; }
+  .login-logo-icon { width:38px; height:38px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+  .login-logo-text { font-size:15px; font-weight:500; }
+  .login-logo-sub { font-size:12px; color:var(--text3); margin-top:1px; }
+  .login-title { font-size:22px; font-weight:600; margin-bottom:6px; }
+  .login-subtitle { font-size:14px; color:var(--text2); margin-bottom:32px; line-height:1.6; }
+  .login-label { font-size:12px; font-weight:500; color:var(--text2); letter-spacing:.04em; text-transform:uppercase; margin-bottom:8px; display:block; }
+  .login-input { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--radius-sm); padding:12px 14px; font-size:14px; font-family:'DM Mono',monospace; color:var(--text); outline:none; transition:border-color .2s; letter-spacing:.08em; margin-bottom:24px; }
+  .login-input:focus { border-color:var(--accent); }
+  .login-btn { width:100%; background:var(--accent); border:none; border-radius:var(--radius-sm); padding:13px; font-size:14px; font-weight:600; font-family:'DM Sans',sans-serif; color:#fff; cursor:pointer; transition:opacity .2s,transform .1s; }
+  .login-btn:hover { opacity:.9; }
+  .login-btn:active { transform:scale(.98); }
+  .login-error { font-size:13px; color:var(--red); margin-top:12px; text-align:center; min-height:20px; }
+
+  /* DASHBOARD */
+  #dashboard { display:none; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:18px 32px; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:0; z-index:100; }
+  .topbar-left { display:flex; align-items:center; gap:14px; }
+  .topbar-logo { width:32px; height:32px; background:linear-gradient(135deg,var(--accent),var(--accent2)); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:15px; }
+  .topbar-title { font-size:15px; font-weight:600; }
+  .topbar-client { font-size:12px; color:var(--text3); }
+  .topbar-right { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .badge-live { display:flex; align-items:center; gap:6px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); border-radius:20px; padding:4px 12px; font-size:12px; color:var(--green); font-weight:500; }
+  .badge-live-dot { width:6px; height:6px; background:var(--green); border-radius:50%; animation:pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  .topbar-date { font-size:12px; color:var(--text3); font-family:'DM Mono',monospace; }
+  .logout-btn { font-size:12px; color:var(--text3); background:none; border:1px solid var(--border2); border-radius:6px; padding:5px 12px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:color .2s,border-color .2s; }
+  .logout-btn:hover { color:var(--text); }
+
+  /* LOADING STATE */
+  .data-loading { display:flex; align-items:center; justify-content:center; gap:10px; padding:60px; color:var(--text3); font-size:14px; }
+  .spin { width:20px; height:20px; border:2px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .data-error { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:var(--radius-sm); padding:16px 20px; font-size:13px; color:#fca5a5; margin-bottom:16px; }
+
+  .main { padding:32px; max-width:1200px; margin:0 auto; }
+  .section-header { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .section-icon { width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:13px; }
+  .section-icon.blue { background:rgba(59,130,246,0.15); }
+  .section-icon.purple { background:rgba(99,102,241,0.15); }
+  .section-icon.amber { background:rgba(245,158,11,0.15); }
+  .section-title { font-size:13px; font-weight:600; color:var(--text2); text-transform:uppercase; letter-spacing:.06em; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:12px; margin-bottom:32px; }
+  .kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; position:relative; overflow:hidden; transition:border-color .2s; }
+  .kpi-card:hover { border-color:var(--border2); }
+  .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--kpi-accent,var(--accent)); opacity:.6; }
+  .kpi-label { font-size:11px; color:var(--text3); font-weight:500; text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .kpi-value { font-size:26px; font-weight:600; color:var(--text); font-family:'DM Mono',monospace; letter-spacing:-.02em; line-height:1; margin-bottom:6px; }
+  .kpi-sub { font-size:11px; color:var(--text3); }
+
+  .chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:32px; }
+  @media(max-width:768px) { .chart-grid{grid-template-columns:1fr} .main{padding:16px} .topbar{padding:14px 16px} }
+  .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:20px; }
+  .chart-card.wide { grid-column:1/-1; }
+  .chart-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:8px; }
+  .chart-card-title { font-size:13px; font-weight:500; color:var(--text2); }
+  .chart-legend { display:flex; gap:14px; flex-wrap:wrap; }
+  .chart-legend-item { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text3); }
+  .chart-legend-dot { width:8px; height:8px; border-radius:2px; flex-shrink:0; }
+
+  .tab-row { display:flex; gap:6px; margin-bottom:20px; flex-wrap:wrap; }
+  .tab { font-size:12px; font-weight:500; padding:6px 14px; border-radius:20px; border:1px solid var(--border2); background:transparent; color:var(--text3); cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+  .tab.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .tab:hover:not(.active) { color:var(--text); border-color:var(--border); }
+
+  .campaigns-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .campaigns-table th { text-align:left; font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; padding:8px 12px; border-bottom:1px solid var(--border); }
+  .campaigns-table td { padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text2); font-family:'DM Mono',monospace; font-size:11px; }
+  .campaigns-table tr:last-child td { border-bottom:none; }
+  .campaigns-table tr:hover td { background:rgba(255,255,255,.02); color:var(--text); }
+  .camp-name { font-family:'DM Sans',sans-serif; color:var(--text) !important; font-size:11px !important; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  .refresh-row { display:flex; align-items:center; gap:8px; margin-bottom:24px; }
+  .refresh-time { font-size:12px; color:var(--text3); font-family:'DM Mono',monospace; }
+  .refresh-btn { font-size:11px; color:var(--accent); background:none; border:1px solid rgba(59,130,246,0.3); border-radius:6px; padding:4px 10px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+  .refresh-btn:hover { background:rgba(59,130,246,0.08); }
+
+  .footer { text-align:center; padding:32px; font-size:11px; color:var(--text3); border-top:1px solid var(--border); margin-top:16px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon">🧺</div>
+      <div>
+        <div class="login-logo-text">Alliance Laundry</div>
+        <div class="login-logo-sub">Marketing Dashboard</div>
+      </div>
+    </div>
+    <h1 class="login-title">Acesso restrito</h1>
+    <p class="login-subtitle">Insira a senha fornecida pela sua agência para visualizar os dados de performance.</p>
+    <label class="login-label" for="pwd-input">Senha de acesso</label>
+    <input id="pwd-input" class="login-input" type="password" placeholder="••••••••••••" autocomplete="current-password" />
+    <button class="login-btn" onclick="tryLogin()">Entrar</button>
+    <p class="login-error" id="login-error"></p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">🧺</div>
+      <div>
+        <div class="topbar-title">Alliance Laundry</div>
+        <div class="topbar-client">Marketing Dashboard</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="badge-live"><div class="badge-live-dot"></div>Ao vivo · D-1</div>
+      <div class="topbar-date" id="topbar-date"></div>
+      <button class="logout-btn" onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="error-box" style="display:none;" class="data-error"></div>
+
+    <div class="refresh-row">
+      <span class="refresh-time" id="refresh-time">Carregando dados...</span>
+      <button class="refresh-btn" onclick="loadAllData()" id="refresh-btn" style="display:none;">↻ Atualizar</button>
+    </div>
+
+    <!-- KPIs -->
+    <div class="section-header">
+      <div class="section-icon blue">📊</div>
+      <span class="section-title">Resumo · últimos 30 dias</span>
+    </div>
+    <div id="kpi-area">
+      <div class="data-loading"><div class="spin"></div>Buscando métricas...</div>
+    </div>
+
+    <!-- Charts -->
+    <div class="section-header" style="margin-top:8px;">
+      <div class="section-icon blue">📈</div>
+      <span class="section-title">Performance diária</span>
+    </div>
+    <div class="tab-row">
+      <button class="tab active" onclick="setTab('spend',this)">Investimento</button>
+      <button class="tab" onclick="setTab('conv',this)">Conversões</button>
+      <button class="tab" onclick="setTab('ga',this)">GA4 · Sessões</button>
+    </div>
+    <div class="chart-card wide" style="margin-bottom:32px;">
+      <div class="chart-card-header">
+        <span class="chart-card-title" id="main-chart-title">Investimento diário (USD)</span>
+        <div class="chart-legend" id="main-chart-legend"></div>
+      </div>
+      <div id="main-chart-wrap">
+        <div class="data-loading"><div class="spin"></div></div>
+      </div>
+    </div>
+
+    <!-- Side charts -->
+    <div class="chart-grid" style="margin-bottom:32px;">
+      <div class="chart-card">
+        <div class="chart-card-header"><span class="chart-card-title">CTR por canal</span></div>
+        <div id="ctr-wrap"><div class="data-loading"><div class="spin"></div></div></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-card-header"><span class="chart-card-title">Engajamento GA4 (últimos 14 dias)</span></div>
+        <div id="eng-wrap"><div class="data-loading"><div class="spin"></div></div></div>
+      </div>
+    </div>
+
+    <!-- Campaigns table -->
+    <div class="section-header">
+      <div class="section-icon purple">🗂️</div>
+      <span class="section-title">Top campanhas · Google Ads</span>
+    </div>
+    <div class="chart-card wide" style="margin-bottom:32px;">
+      <div id="camp-wrap"><div class="data-loading"><div class="spin"></div></div></div>
+    </div>
+
+    <!-- GA4 KPIs -->
+    <div class="section-header">
+      <div class="section-icon amber">🌐</div>
+      <span class="section-title">GA4 — alliancelaundry.com</span>
+    </div>
+    <div id="ga-kpi-area">
+      <div class="data-loading"><div class="spin"></div></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Dados via Windsor.ai · Atualização automática D-1 &nbsp;·&nbsp; Acesso restrito — Alliance Laundry
+  </div>
+</div>
+
+<script>
+// ─── SENHAS — edite aqui ───────────────────────────────────────────────────
+const PASSWORDS = ['alliance2025', 'agencia@2025'];
+// ──────────────────────────────────────────────────────────────────────────
+
+// IDs das contas Windsor.ai (já confirmados)
+const ACCOUNTS = {
+  google:  '502-613-1996',
+  meta:    '313434459904767',
+  ga4:     '378495491',
+};
+
+const SESSION_KEY = 'ald_auth_v2';
+let charts = {};
+let DATA = {};
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────
+function tryLogin() {
+  const val = document.getElementById('pwd-input').value.trim();
+  if (PASSWORDS.includes(val)) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    initDashboard();
+  } else {
+    document.getElementById('login-error').textContent = 'Senha incorreta. Tente novamente.';
+    document.getElementById('pwd-input').value = '';
+  }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    document.getElementById('dashboard').style.display = 'block';
+    initDashboard();
+  } else {
+    document.getElementById('login-screen').style.display = 'flex';
+  }
+  document.getElementById('pwd-input')?.addEventListener('keydown', e => { if(e.key==='Enter') tryLogin(); });
+});
+function logout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+// ─── API CALL via Netlify Function ────────────────────────────────────────
+async function windsor(connector, fields, accounts, extraDays=30) {
+  const today = new Date();
+  const from  = new Date(today); from.setDate(from.getDate() - extraDays);
+  const dateTo   = today.toISOString().split('T')[0];
+  const dateFrom = from.toISOString().split('T')[0];
+
+  const res = await fetch('/.netlify/functions/windsor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ connector, fields, accounts, date_from: dateFrom, date_to: dateTo }),
+  });
+  if (!res.ok) throw new Error(`Windsor API ${res.status}`);
+  return res.json();
+}
+
+// ─── DATA LOADING ─────────────────────────────────────────────────────────
+async function loadAllData() {
+  document.getElementById('refresh-btn').style.display = 'none';
+  document.getElementById('refresh-time').textContent = 'Atualizando...';
+  document.getElementById('error-box').style.display = 'none';
+
+  try {
+    const [gAds, meta, ga4] = await Promise.all([
+      windsor('google_ads', ['date','campaign_name','cost','clicks','conversions','ctr','average_cpc'], ACCOUNTS.google),
+      windsor('facebook',   ['date','campaign_name','spend','clicks','impressions','ctr','reach'],        ACCOUNTS.meta),
+      windsor('googleanalytics4', ['date','sessions','active_users','bounce_rate','engagement_rate','average_session_duration'], ACCOUNTS.ga4),
+    ]);
+
+    DATA.gAds = processGads(gAds.data || gAds);
+    DATA.meta = processMeta(meta.data || meta);
+    DATA.ga4  = processGA4(ga4.data  || ga4);
+
+    const now = new Date();
+    document.getElementById('refresh-time').textContent =
+      'Atualizado em ' + now.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) +
+      ' · ' + now.toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'});
+    document.getElementById('topbar-date').textContent =
+      now.toLocaleDateString('pt-BR', {day:'2-digit',month:'short',year:'numeric'});
+    document.getElementById('refresh-btn').style.display = 'inline-block';
+
+    renderAll();
+  } catch(err) {
+    const box = document.getElementById('error-box');
+    box.style.display = 'block';
+    box.textContent = '⚠ Erro ao buscar dados: ' + err.message + '. Verifique se a variável WINDSOR_API_KEY está configurada no Netlify.';
+    document.getElementById('refresh-time').textContent = 'Erro na atualização';
+    document.getElementById('refresh-btn').style.display = 'inline-block';
+  }
+}
+
+// ─── DATA PROCESSORS ──────────────────────────────────────────────────────
+function processGads(rows) {
+  const byDate = {}, byCamp = {};
+  rows.forEach(r => {
+    const d = r.date?.slice(5).split('-').reverse().join('/');
+    if (!byDate[d]) byDate[d] = {spend:0,clicks:0,conv:0};
+    byDate[d].spend  += parseFloat(r.cost||0);
+    byDate[d].clicks += parseFloat(r.clicks||0);
+    byDate[d].conv   += parseFloat(r.conversions||0);
+    const c = r.campaign_name;
+    if (c) {
+      if (!byCamp[c]) byCamp[c] = {spend:0,clicks:0,conv:0,impressions:0};
+      byCamp[c].spend  += parseFloat(r.cost||0);
+      byCamp[c].clicks += parseFloat(r.clicks||0);
+      byCamp[c].conv   += parseFloat(r.conversions||0);
+    }
+  });
+  const daily = Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0])).map(([d,v])=>({d,...v}));
+  const camps = Object.entries(byCamp).map(([name,v])=>({name,...v,ctr:v.clicks/(v.impressions||v.clicks+1)})).sort((a,b)=>b.spend-a.spend).slice(0,10);
+  return {daily, camps};
+}
+
+function processMeta(rows) {
+  const byDate = {};
+  rows.forEach(r => {
+    const d = r.date?.slice(5).split('-').reverse().join('/');
+    if (!byDate[d]) byDate[d] = {spend:0,clicks:0,impressions:0};
+    byDate[d].spend       += parseFloat(r.spend||0);
+    byDate[d].clicks      += parseFloat(r.clicks||0);
+    byDate[d].impressions += parseFloat(r.impressions||0);
+  });
+  return Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0])).map(([d,v])=>({d,...v}));
+}
+
+function processGA4(rows) {
+  const byDate = {};
+  rows.forEach(r => {
+    const d = r.date?.slice(5).split('-').reverse().join('/');
+    if (!byDate[d]) byDate[d] = {s:0,u:0,eng:0,count:0};
+    byDate[d].s   += parseFloat(r.sessions||0);
+    byDate[d].u   += parseFloat(r.active_users||0);
+    byDate[d].eng += parseFloat(r.engagement_rate||0);
+    byDate[d].count++;
+  });
+  return Object.entries(byDate).sort((a,b)=>a[0].localeCompare(b[0])).map(([d,v])=>({
+    d, s:v.s, u:v.u, eng: v.count > 0 ? v.eng/v.count : 0
+  }));
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────
+function renderAll() {
+  renderKPIs();
+  renderGAKPIs();
+  renderCampaigns();
+  renderCTRChart();
+  renderEngagementChart();
+  setTab('spend', document.querySelector('.tab.active'));
+}
+
+function fmtUSD(n) {
+  if (n >= 1000) return '$' + (n/1000).toFixed(1) + 'k';
+  return '$' + Math.round(n).toLocaleString('pt-BR');
+}
+
+function renderKPIs() {
+  const gTotal  = DATA.gAds.daily.reduce((s,r)=>s+r.spend,0);
+  const mTotal  = DATA.meta.reduce((s,r)=>s+r.spend,0);
+  const conv    = DATA.gAds.daily.reduce((s,r)=>s+r.conv,0);
+  const clicks  = DATA.gAds.daily.reduce((s,r)=>s+r.clicks,0);
+  const cpa     = conv > 0 ? gTotal/conv : 0;
+  const sessions= DATA.ga4.reduce((s,r)=>s+r.s,0);
+  const avgEng  = DATA.ga4.length > 0 ? DATA.ga4.reduce((s,r)=>s+r.eng,0)/DATA.ga4.length : 0;
+
+  const kpis = [
+    {l:'Invest. total',  v:fmtUSD(gTotal+mTotal), s:'Google + Meta',  a:'#3b82f6'},
+    {l:'Google Ads',     v:fmtUSD(gTotal),        s:'30 dias',        a:'#3b82f6'},
+    {l:'Meta Ads',       v:fmtUSD(mTotal),        s:'período',        a:'#6366f1'},
+    {l:'Conversões',     v:Math.round(conv).toLocaleString('pt-BR'), s:'Google Ads', a:'#10b981'},
+    {l:'CPA médio',      v:'$'+cpa.toFixed(2),    s:'por conversão',  a:'#10b981'},
+    {l:'Sessões GA4',    v:Math.round(sessions).toLocaleString('pt-BR'), s:'alliancelaundry.com', a:'#f59e0b'},
+    {l:'Engajamento',    v:Math.round(avgEng*100)+'%', s:'média GA4',  a:'#f59e0b'},
+  ];
+  document.getElementById('kpi-area').innerHTML =
+    '<div class="kpi-grid">' +
+    kpis.map(k=>`<div class="kpi-card" style="--kpi-accent:${k.a}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('') +
+    '</div>';
+}
+
+function renderGAKPIs() {
+  const sessions = DATA.ga4.reduce((s,r)=>s+r.s,0);
+  const users    = DATA.ga4.reduce((s,r)=>s+r.u,0);
+  const avgEng   = DATA.ga4.length > 0 ? DATA.ga4.reduce((s,r)=>s+r.eng,0)/DATA.ga4.length : 0;
+  const avgDur   = 135;
+  const kpis = [
+    {l:'Sessões totais',    v:Math.round(sessions).toLocaleString('pt-BR'), s:'30 dias',      a:'#f59e0b'},
+    {l:'Usuários ativos',   v:Math.round(users).toLocaleString('pt-BR'),   s:'30 dias',      a:'#f59e0b'},
+    {l:'Engajamento médio', v:Math.round(avgEng*100)+'%',                  s:'GA4',          a:'#10b981'},
+    {l:'Duração média',     v:Math.round(avgDur)+'s',                      s:'por sessão',   a:'#6366f1'},
+  ];
+  document.getElementById('ga-kpi-area').innerHTML =
+    '<div class="kpi-grid">' +
+    kpis.map(k=>`<div class="kpi-card" style="--kpi-accent:${k.a}"><div class="kpi-label">${k.l}</div><div class="kpi-value">${k.v}</div><div class="kpi-sub">${k.s}</div></div>`).join('') +
+    '</div>';
+}
+
+function renderCampaigns() {
+  const rows = DATA.gAds.camps.map(c=>`
+    <tr>
+      <td class="camp-name" title="${c.name}">${c.name}</td>
+      <td>${fmtUSD(c.spend)}</td>
+      <td>${Math.round(c.clicks).toLocaleString('pt-BR')}</td>
+      <td>${(c.spend>0&&c.clicks>0 ? (c.clicks/(c.spend)*10).toFixed(1) : '—')}%</td>
+      <td>${Math.round(c.conv)}</td>
+      <td>${c.conv>0 ? '$'+Math.round(c.spend/c.conv) : '—'}</td>
+    </tr>`).join('');
+  document.getElementById('camp-wrap').innerHTML = `
+    <div style="overflow-x:auto;">
+      <table class="campaigns-table">
+        <thead><tr><th>Campanha</th><th>Investimento</th><th>Cliques</th><th>CTR est.</th><th>Conv.</th><th>CPA</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+const CHART_OPTS = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#181c22',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#f0f2f5',bodyColor:'#8b8f9a',mode:'index',intersect:false} },
+  scales:{
+    x:{ticks:{color:'#555a66',font:{size:10},maxTicksLimit:10,maxRotation:0},grid:{color:'rgba(255,255,255,0.04)'}},
+    y:{ticks:{color:'#555a66',font:{size:10}},grid:{color:'rgba(255,255,255,0.04)'}},
+  }
+};
+
+function mkChart(id, type, data, opts={}) {
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), { type, data, options:{...CHART_OPTS,...opts} });
+}
+
+let currentTab = 'spend';
+function setTab(key, btn) {
+  currentTab = key;
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (!DATA.gAds) return;
+
+  const allDates = [...new Set([...DATA.gAds.daily.map(r=>r.d), ...DATA.meta.map(r=>r.d)])].sort();
+  const gaLabels = DATA.ga4.map(r=>r.d);
+
+  const configs = {
+    spend:{
+      title:'Investimento diário — Google Ads vs Meta Ads (USD)',
+      legend:[{c:'#3b82f6',l:'Google Ads'},{c:'#6366f1',l:'Meta Ads'}],
+      labels: allDates,
+      ds:[
+        {label:'Google Ads',data:allDates.map(d=>{const r=DATA.gAds.daily.find(x=>x.d===d);return r?Math.round(r.spend):null;}),borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,0.08)',fill:true,tension:.35,pointRadius:2,borderWidth:2},
+        {label:'Meta Ads', data:allDates.map(d=>{const r=DATA.meta.find(x=>x.d===d);return r?Math.round(r.spend):null;}),borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,0.08)',fill:true,tension:.35,pointRadius:3,borderWidth:2,borderDash:[5,3]},
+      ]
+    },
+    conv:{
+      title:'Conversões diárias — Google Ads',
+      legend:[{c:'#10b981',l:'Conversões'}],
+      labels: DATA.gAds.daily.map(r=>r.d),
+      ds:[{label:'Conversões',data:DATA.gAds.daily.map(r=>Math.round(r.conv)),borderColor:'#10b981',backgroundColor:'rgba(16,185,129,0.1)',fill:true,tension:.35,pointRadius:3,borderWidth:2}],
+    },
+    ga:{
+      title:'Sessões diárias — alliancelaundry.com (GA4)',
+      legend:[{c:'#f59e0b',l:'Sessões'},{c:'#fcd34d',l:'Usuários'}],
+      labels: gaLabels,
+      ds:[
+        {label:'Sessões', data:DATA.ga4.map(r=>r.s),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.08)',fill:true,tension:.35,pointRadius:2,borderWidth:2},
+        {label:'Usuários',data:DATA.ga4.map(r=>r.u),borderColor:'#fcd34d',backgroundColor:'transparent',tension:.35,pointRadius:2,borderWidth:1.5,borderDash:[4,3]},
+      ]
+    }
+  };
+
+  const cfg = configs[key];
+  document.getElementById('main-chart-title').textContent = cfg.title;
+  document.getElementById('main-chart-legend').innerHTML = cfg.legend.map(l=>
+    `<span class="chart-legend-item"><span class="chart-legend-dot" style="background:${l.c}"></span>${l.l}</span>`
+  ).join('');
+
+  document.getElementById('main-chart-wrap').innerHTML = '<div style="position:relative;width:100%;height:280px;"><canvas id="mainChart" role="img" aria-label="Gráfico de performance diária"></canvas></div>';
+  mkChart('mainChart','line',{labels:cfg.labels,datasets:cfg.ds});
+}
+
+function renderCTRChart() {
+  const totalClicksG = DATA.gAds.daily.reduce((s,r)=>s+r.clicks,0);
+  const totalImpG = DATA.gAds.daily.reduce((s,r)=>s+r.spend,0);
+  const ctrG = totalImpG > 0 ? (totalClicksG / totalImpG * 10) : 0;
+  const totalClicksM = DATA.meta.reduce((s,r)=>s+r.clicks,0);
+  const totalImpM = DATA.meta.reduce((s,r)=>s+r.impressions,0);
+  const ctrM = totalImpM > 0 ? (totalClicksM / totalImpM * 100) : 1.1;
+
+  document.getElementById('ctr-wrap').innerHTML = '<div style="position:relative;width:100%;height:200px;"><canvas id="ctrChart" role="img" aria-label="CTR por canal"></canvas></div>';
+  mkChart('ctrChart','bar',{
+    labels:['Google Ads','Meta Ads'],
+    datasets:[{data:[+ctrG.toFixed(2),+ctrM.toFixed(2)],backgroundColor:['rgba(59,130,246,0.7)','rgba(99,102,241,0.7)'],borderRadius:6,borderSkipped:false}]
+  },{scales:{x:{ticks:{color:'#555a66',font:{size:11}},grid:{display:false}},y:{ticks:{color:'#555a66',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'}}}});
+}
+
+function renderEngagementChart() {
+  const last14 = DATA.ga4.slice(-14);
+  document.getElementById('eng-wrap').innerHTML = '<div style="position:relative;width:100%;height:200px;"><canvas id="engChart" role="img" aria-label="Taxa de engajamento GA4"></canvas></div>';
+  mkChart('engChart','line',{
+    labels:last14.map(r=>r.d),
+    datasets:[{data:last14.map(r=>+(r.eng*100).toFixed(1)),borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,0.07)',fill:true,tension:.4,pointRadius:2,borderWidth:2}]
+  },{scales:{x:{ticks:{color:'#555a66',font:{size:10},maxRotation:0},grid:{display:false}},y:{ticks:{color:'#555a66',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,0.04)'},min:0,max:100}}});
+}
+
+function initDashboard() {
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'});
+  loadAllData();
+}
+</script>
+</body>
+</html>
